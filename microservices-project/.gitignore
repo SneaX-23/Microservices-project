@@ -57,3 +57,9 @@ postgres-data/
 # Local-only files
 tmp/
 uploads/
+
+certs/
+nginx/certs/
+*.crt
+*.key
+*.pem
