@@ -18,6 +18,8 @@ services:
     build:
       context: ./user-service
       dockerfile: Dockerfile
+      args:
+        - DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/microservices_db
     expose:
       - "3000"
     environment:
