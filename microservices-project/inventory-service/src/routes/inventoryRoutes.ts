@@ -6,10 +6,10 @@ const router = Router();
 // Public: Get all products
 router.get("/", getAllProducts);
 
-// Internal/Admin: Create a new product (To seed the DB)
+// Internal/Admin: Create a new product
 router.post("/", createProduct);
 
-// Protected: Buy a product (Stock deduction)
+// Protected: Buy a product 
 router.post("/buy", buyProduct);
 
 export default router;

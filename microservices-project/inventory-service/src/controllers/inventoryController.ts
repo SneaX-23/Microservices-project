@@ -48,7 +48,7 @@ export const buyProduct = async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`✅ User ${userId} bought ${quantity} of Product ${productId}`);
+    console.log(`User ${userId} bought ${quantity} of Product ${productId}`);
 
     res.json({ success: true, message: "Order placed successfully!" });
 

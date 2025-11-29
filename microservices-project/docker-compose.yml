@@ -13,7 +13,7 @@ services:
     depends_on:
       - user-service
       - email-service  
- 
+
   user-service:
     build:
       context: ./user-service
@@ -27,8 +27,10 @@ services:
       - PORT=3000
       - JWT_SECRET=super_secret_jwt_key_change_me
       - DATABASE_URL=postgresql://myuser:mypassword@postgres:5432/microservices_db
+      - KAFKA_BROKER=kafka:9092  
     depends_on:
       - postgres
+      - kafka
 
   email-service:
     build:
@@ -40,8 +42,10 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
+      - KAFKA_BROKER=kafka:9092 
     depends_on:
       - redis
+      - kafka
 
   postgres:
     image: postgres:15-alpine
@@ -67,13 +71,15 @@ services:
       context: ./inventory-service
       dockerfile: Dockerfile
       args:
-      - DATABASE_URL=postgresql://user:password@inventory_db:5432/inventory_db
+        - DATABASE_URL=postgresql://user:password@inventory_db:5432/inventory_db
     ports:
       - "3001:3000"
     environment:
       - DATABASE_URL=postgresql://user:password@inventory_db:5432/inventory_db
+      - KAFKA_BROKER=kafka:9092 
     depends_on:
       - inventory_db
+      - kafka
 
   inventory_db:
     image: postgres:15-alpine
@@ -88,6 +94,48 @@ services:
     volumes:
       - inventory_pg_data:/var/lib/postgresql/data
 
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_KRAFT_MODE: "true"
+      KAFKA_PROCESS_ROLES: controller,broker
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+      CLUSTER_ID: "Mk3OEYBSD34fcwNTJENDM2Qk"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka_ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
+
+
 volumes:
   postgres_data:
   inventory_pg_data:
+  kafka_data:

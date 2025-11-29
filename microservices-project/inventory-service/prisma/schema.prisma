@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// inventory-service/prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -11,12 +7,40 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
 model Product {
   id          Int      @id @default(autoincrement())
-  sku         String   @unique 
+  sku         String   @unique
   name        String
+  description String?
   price       Decimal  @db.Decimal(10, 2)
   stock       Int      @default(0) 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+
+model Reservation {
+  id          String   @id @default(uuid())
+  userId      String
+  productId   Int
+  quantity    Int
+  status      ReservationStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
+
+model InventoryEvent {
+  id        String   @id @default(uuid())
+  type      String   
+  productId Int
+  payload   Json
+  createdAt DateTime @default(now())
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  EXPIRED
+  CANCELLED
 }
