@@ -63,3 +63,5 @@ nginx/certs/
 *.crt
 *.key
 *.pem
+
+ideas.txt

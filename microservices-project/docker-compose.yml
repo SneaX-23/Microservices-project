@@ -61,6 +61,33 @@ services:
     container_name: redis_queue_2
     ports:
       - "6379:6379"
+  
+  inventory-service:
+    build: 
+      context: ./inventory-service
+      dockerfile: Dockerfile
+      args:
+      - DATABASE_URL=postgresql://user:password@inventory_db:5432/inventory_db
+    ports:
+      - "3001:3000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@inventory_db:5432/inventory_db
+    depends_on:
+      - inventory_db
+
+  inventory_db:
+    image: postgres:15-alpine
+    container_name: inventory_db_container
+    restart: always
+    environment:
+      - POSTGRES_DB=inventory_db
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5433:5432"
+    volumes:
+      - inventory_pg_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
+  inventory_pg_data:
