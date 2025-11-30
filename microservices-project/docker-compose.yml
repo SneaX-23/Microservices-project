@@ -134,6 +134,18 @@ services:
     depends_on:
       - kafka
 
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: payment_service
+    expose:
+      - "3000"
+    environment:
+      - PORT=3000
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      - kafka
 
 volumes:
   postgres_data:
