@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAllProducts, createProduct, buyProduct } from "../controllers/inventoryController";
+import { getAllProducts, createProduct, buyProduct, reserveProduct } from "../controllers/inventoryController";
 
 const router = Router();
 
@@ -12,4 +12,5 @@ router.post("/", createProduct);
 // Protected: Buy a product 
 router.post("/buy", buyProduct);
 
+router.post("/reserve", reserveProduct);
 export default router;
