@@ -71,7 +71,7 @@ export const checkoutService = {
           productId,
           quantity,
           status: "PENDING",
-          expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 mins
+          expiresAt: new Date(Date.now() +  5 * 1000), // 15 mins
         },
       });
 

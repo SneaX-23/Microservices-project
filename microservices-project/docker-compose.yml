@@ -94,7 +94,7 @@ services:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=password
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - inventory_pg_data:/var/lib/postgresql/data
 
@@ -143,8 +143,10 @@ services:
     environment:
       - PORT=3000
       - KAFKA_BROKER=kafka:9092
+      - REDIS_HOST=redis
     depends_on:
       - kafka
+      - redis
 
 volumes:
   postgres_data:

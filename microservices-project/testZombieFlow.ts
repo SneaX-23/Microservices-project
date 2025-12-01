@@ -12,8 +12,9 @@ async function runZombieTest() {
   try {
     // 1. Create a Product
     console.log("Step 1: Creating Product...");
+    const uniqueSku = `ZOMBIE-ITEM-${Date.now()}`;
     const productRes = await axios.post(`${INVENTORY_API}/`, {
-      sku: "ZOMBIE-ITEM-001",
+      sku: uniqueSku,
       name: "Brain Freeze Ice Cream",
       price: 100,
       stock: 10,

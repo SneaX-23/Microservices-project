@@ -9,7 +9,7 @@ const redis = new Redis({
 
 export const startExpirationJob = () => {
   // Schedule task to run every minute
-  cron.schedule("* * * * *", async () => {
+  cron.schedule("*/10 * * * * *", async () => {
     console.log("Running Expiration Cleanup Job...");
 
     try {

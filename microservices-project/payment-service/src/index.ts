@@ -1,10 +1,15 @@
 import express from "express";
 import { Kafka } from "kafkajs";
-
+import Redis from "ioredis";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+
+const redis = new Redis({
+  host: process.env.REDIS_HOST || "redis",
+  port: 6379,
+})
 
 const kafka = new Kafka({
   clientId: "payment-service",
@@ -21,12 +26,12 @@ const startService = async () => {
     await producer.connect();
     await consumer.connect();
     
-    // Subscribe to topics
+    // Subscribe to topic
     await consumer.subscribe({ topic: "payment-events", fromBeginning: false });
     
     console.log("Payment Service: Connected to Kafka");
 
-    //  Start the Consumer Loop INSIDE the async function
+    //  Start the Consumer Loop
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         if (!message.value) return;
@@ -35,7 +40,14 @@ const startService = async () => {
 
         if (event.type === "REFUND_INITIATED") {
           const { reservationId, amount, userId, reason } = event.data;
-          
+
+          const idempotencyKey = `refund:processed:${reservationId}`;
+          const alreadyRefunded = await redis.get(idempotencyKey);
+          if(alreadyRefunded){
+            console.warn(`Duplicate refund for ${reservationId} | Amout ${amount}`);
+            return;
+          }
+
           console.log(`Processing REFUND for ${reservationId} | Amount: $${amount}`);
           console.log(`Reason: ${reason}`);
 
@@ -43,8 +55,10 @@ const startService = async () => {
           await new Promise((resolve) => setTimeout(resolve, 1000));
           
           console.log(`Refund Successful for User ${userId}`);
-          
-          // Emit REFUND_COMPLETED here
+          // Todo
+          // Emit REFUND_COMPLETED 
+
+          await redis.set(idempotencyKey, "true", "EX", 60 * 60 * 24 )
         }
       },
     });
