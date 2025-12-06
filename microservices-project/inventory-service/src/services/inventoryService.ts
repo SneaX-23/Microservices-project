@@ -9,15 +9,3 @@ export const CreateProduct = async (sku: string, name: string, price: number, st
     data : {sku, name, price, stock}
   })
 }
-
-export const BuyProduct = async (productId: number, quantity: number) => {
-  return prisma.product.updateMany({
-    where: {
-        id: productId,
-        stock: { gte: quantity },
-      },
-      data: {
-        stock: { decrement: quantity }, 
-      },
-  })
-}

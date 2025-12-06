@@ -140,7 +140,7 @@ export const ConfirmReservation = async (reservationId: string, paidAmount: numb
             console.warn("Inconsistent stock: cannot confirm reservation.");
             // ToDO Trigger Refund Logic 
             await producer.send({
-              topic: "payment_services",
+              topic: "payment_events",
               messages: [{
                 value: JSON.stringify({
                   type: "REFUND_INITIATED",

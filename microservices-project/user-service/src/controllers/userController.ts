@@ -1,24 +1,20 @@
-import { Request, Response } from "express";
-import { UserIdInput } from "../validators/user.schema";
+import { Request, Response, NextFunction } from "express";
 import { GetUser } from "../services/userService";
+import { catchAsync } from "../utils/catchAsync";
+import { AppError } from "../utils/appError";
 
-export const getUser = async (
-    req: Request<{id: string}, {}, {}>, res: Response
-) => {
+export const getUser = catchAsync(async (req: Request<{id: string}>, res: Response, next: NextFunction) => {
     const userId = req.params.id;
 
     if (userId === 'null' || userId === 'undefined') {
-        return res.status(400).json({ message: "Invalid User ID format" });
+        return next(new AppError("Invalid User ID format", 400));
     }
 
-    try {
-        const user = await GetUser(userId);
-        if(!user) return res.status(400).json({message: "User Not found"});
+    const user = await GetUser(userId);
+    
+    if(!user) {
+        return next(new AppError("User Not found", 404));
+    }
 
-        return res.json({user: user});
-
-    } catch (error: any) {
-        console.error(error);
-        return res.status(500).json({messge: "Internal error!"})
-    }    
-}
+    res.json({user: user});
+});
