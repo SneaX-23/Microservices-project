@@ -1,6 +1,10 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { Kafka } from "kafkajs";
 import Redis from "ioredis";
+import { catchAsync } from "./utils/catchAsync";
+import { AppError } from "./utils/appError";
+import { globalErrorHandler } from "./controllers/errorController";
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -9,7 +13,7 @@ app.use(express.json());
 const redis = new Redis({
   host: process.env.REDIS_HOST || "redis",
   port: 6379,
-})
+});
 
 const kafka = new Kafka({
   clientId: "payment-service",
@@ -19,51 +23,41 @@ const kafka = new Kafka({
 const producer = kafka.producer();
 const consumer = kafka.consumer({ groupId: "payment-service-group" });
 
-// Define the startup logic (Connect -> Subscribe -> Run -> Listen)
 const startService = async () => {
   try {
     console.log("Payment Service: Connecting to Kafka...");
     await producer.connect();
     await consumer.connect();
     
-    // Subscribe to topic
     await consumer.subscribe({ topic: "payment-events", fromBeginning: false });
-    
     console.log("Payment Service: Connected to Kafka");
 
-    //  Start the Consumer Loop
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
         if (!message.value) return;
-
         const event = JSON.parse(message.value.toString());
 
         if (event.type === "REFUND_INITIATED") {
           const { reservationId, amount, userId, reason } = event.data;
-
           const idempotencyKey = `refund:processed:${reservationId}`;
           const alreadyRefunded = await redis.get(idempotencyKey);
+          
           if(alreadyRefunded){
-            console.warn(`Duplicate refund for ${reservationId} | Amout ${amount}`);
+            console.warn(`Duplicate refund for ${reservationId} | Amount ${amount}`);
             return;
           }
 
           console.log(`Processing REFUND for ${reservationId} | Amount: $${amount}`);
-          console.log(`Reason: ${reason}`);
-
-          // SIMULATE BANK REFUND API CALL
+          // Simulated delay
           await new Promise((resolve) => setTimeout(resolve, 1000));
-          
           console.log(`Refund Successful for User ${userId}`);
-          // Todo
-          // Emit REFUND_COMPLETED 
-
+          
           await redis.set(idempotencyKey, "true", "EX", 60 * 60 * 24 )
         }
       },
     });
 
-    //  Only start the HTTP server AFTER Kafka is ready
+    // Start HTTP Server
     app.listen(PORT, () => {
       console.log(`Payment Service running on port ${PORT}`);
     });
@@ -75,12 +69,12 @@ const startService = async () => {
 };
 
 
-
-app.post("/pay", async (req, res) => {
+app.post("/pay", catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const { reservationId, amount } = req.body;
-  const userId = req.headers['X-User-Id']
+  const userId = req.headers['x-user-id']; 
+
   if (!reservationId) {
-    return res.status(400).json({ error: "Missing reservationId" });
+    return next(new AppError("Missing reservationId", 400));
   }
 
   // Immediate Response
@@ -91,9 +85,7 @@ app.post("/pay", async (req, res) => {
 
   console.log(`Processing payment for ${reservationId}...`);
   
- 
   await new Promise((resolve) => setTimeout(resolve, 2000));
-
 
   const isSuccess = Math.random() < 0.8; 
   const eventType = isSuccess ? "PAYMENT_CONFIRMED" : "PAYMENT_FAILED";
@@ -109,15 +101,19 @@ app.post("/pay", async (req, res) => {
     },
   };
 
-  try {
-    await producer.send({
-      topic: "payment-events",
-      messages: [{ value: JSON.stringify(eventPayload) }],
-    });
-    console.log(`Emitted Event: ${eventType} for ${reservationId}`);
-  } catch (err) {
-    console.error("Failed to emit Kafka event", err);
-  }
+  await producer.send({
+    topic: "payment-events",
+    messages: [{ value: JSON.stringify(eventPayload) }],
+  });
+  console.log(`Emitted Event: ${eventType} for ${reservationId}`);
+}));
+
+// 404 Handler
+app.all("*", (req: Request, res: Response, next: NextFunction) => {
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
 });
+
+// Global Error Handler
+app.use(globalErrorHandler);
 
 startService();
