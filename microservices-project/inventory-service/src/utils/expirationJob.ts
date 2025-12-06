@@ -8,7 +8,7 @@ const redis = new Redis({
 });
 
 export const startExpirationJob = () => {
-  // Schedule task to run every minute
+  // Schedule task to run every minute (set to 10 seconds for testing)
   cron.schedule("*/10 * * * * *", async () => {
     console.log("Running Expiration Cleanup Job...");
 
@@ -59,8 +59,7 @@ async function processExpiredReservation(reservation: any) {
         },
     });
 
-    // If updateResult.count is 0, it means the status changed before we could grab it.
-    // So we abort releasing the Redis stock.
+
     if (updateResult.count === 0) return;
 
     //  Increment Redis Stock- Release the hold

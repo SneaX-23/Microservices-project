@@ -78,7 +78,7 @@ const startService = async () => {
 
 app.post("/pay", async (req, res) => {
   const { reservationId, amount } = req.body;
-
+  const userId = req.headers['X-User-Id']
   if (!reservationId) {
     return res.status(400).json({ error: "Missing reservationId" });
   }
@@ -103,6 +103,7 @@ app.post("/pay", async (req, res) => {
     data: {
       reservationId,
       amount,
+      userId,
       timestamp: new Date().toISOString(),
       reason: isSuccess ? "Transaction Approved" : "Insufficient Funds",
     },

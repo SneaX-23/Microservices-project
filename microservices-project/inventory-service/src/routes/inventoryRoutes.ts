@@ -1,16 +1,15 @@
 import { Router } from "express";
-import { getAllProducts, createProduct, buyProduct, reserveProduct } from "../controllers/inventoryController";
-
+import { getAllProducts, createProduct, reserveProduct } from "../controllers/inventoryController";
+import { ReserveProductSchema, CreateProductSchema } from "../validators/inventory.schema";
+import { validate } from "../validators/validate";
 const router = Router();
 
 // Public: Get all products
 router.get("/", getAllProducts);
 
 // Internal/Admin: Create a new product
-router.post("/", createProduct);
+router.post("/", validate(CreateProductSchema),createProduct);
 
-// Protected: Buy a product 
-router.post("/buy", buyProduct);
-
-router.post("/reserve", reserveProduct);
+//Public: Reserve a product
+router.post("/reserve", validate(ReserveProductSchema), reserveProduct);
 export default router;

@@ -105,6 +105,7 @@ export const ConfirmReservation = async (reservationId: string, paidAmount: numb
                         reservationId: reservation.id,
                         userId: reservation.userId,
                         amount: paidAmount,
+                        timestamp: new Date().toISOString(),
                         reason: "Inventory Reservation Expired"
                     }
                 })
@@ -136,11 +137,27 @@ export const ConfirmReservation = async (reservationId: string, paidAmount: numb
         
         // Safety Check
         if (stockToDeduct < 0) {
-            throw new Error("Inconsistent stock: cannot confirm reservation.");
+            console.warn("Inconsistent stock: cannot confirm reservation.");
             // ToDO Trigger Refund Logic 
+            await producer.send({
+              topic: "payment_services",
+              messages: [{
+                value: JSON.stringify({
+                  type: "REFUND_INITIATED",
+                  data: {
+                    reservationId: reservation.id,
+                    userId: reservation.userId,
+                    amount: paidAmount,
+                    timestamp: new Date().toISOString(),
+                    reason: "Inconsistent stock: cannot confirm reservation."
+
+                  }
+                })
+            }]
+            })
         }
 
-        // 4. Update product
+        // Update product
         await tx.product.update({
             where: { id: reservation.productId },
             data: { stock: stockToDeduct },
