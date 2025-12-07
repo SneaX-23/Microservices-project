@@ -2,6 +2,7 @@ import Redis from "ioredis";
 import { prisma } from "../db/prisma";
 import { Producer } from "kafkajs";
 
+
 const redis = new Redis({
   host: process.env.REDIS_HOST || "redis",
   port: 6379,
@@ -140,7 +141,7 @@ export const ConfirmReservation = async (reservationId: string, paidAmount: numb
             console.warn("Inconsistent stock: cannot confirm reservation.");
             // ToDO Trigger Refund Logic 
             await producer.send({
-              topic: "payment_events",
+              topic: "payment-events",
               messages: [{
                 value: JSON.stringify({
                   type: "REFUND_INITIATED",

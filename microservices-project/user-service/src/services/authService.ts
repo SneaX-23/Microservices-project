@@ -61,7 +61,7 @@ export const rotateRefreshToken = async (
     newHashedToken: string
 ) => {
     return await prisma.$transaction(async (tx) => {
-        // A. Create the new token record
+        // Create the new token record
         const newToken = await tx.refreshToken.create({
             data: {
                 userId: userId,
