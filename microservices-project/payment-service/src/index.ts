@@ -4,11 +4,14 @@ import Redis from "ioredis";
 import { catchAsync } from "./utils/catchAsync";
 import { AppError } from "./utils/appError";
 import { globalErrorHandler } from "./controllers/errorController";
+import logger from "./utils/logger";
+import { requestLogger } from "./middleware/requestLogger";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(requestLogger);
 
 const redis = new Redis({
   host: process.env.REDIS_HOST || "redis",
@@ -25,12 +28,12 @@ const consumer = kafka.consumer({ groupId: "payment-service-group" });
 
 const startService = async () => {
   try {
-    console.log("Payment Service: Connecting to Kafka...");
+    logger.info("Payment Service: Connecting to Kafka...");
     await producer.connect();
     await consumer.connect();
     
     await consumer.subscribe({ topic: "payment-events", fromBeginning: false });
-    console.log("Payment Service: Connected to Kafka");
+    logger.info("Payment Service: Connected to Kafka");
 
     await consumer.run({
       eachMessage: async ({ topic, partition, message }) => {
@@ -43,14 +46,14 @@ const startService = async () => {
           const alreadyRefunded = await redis.get(idempotencyKey);
           
           if(alreadyRefunded){
-            console.warn(`Duplicate refund for ${reservationId} | Amount ${amount}`);
+            logger.warn(`Duplicate refund for ${reservationId} | Amount ${amount}`);
             return;
           }
 
-          console.log(`Processing REFUND for ${reservationId} | Amount: $${amount}`);
+          logger.info(`Processing REFUND for ${reservationId} | Amount: $${amount}`);
           // Simulated delay
           await new Promise((resolve) => setTimeout(resolve, 1000));
-          console.log(`Refund Successful for User ${userId}`);
+          logger.info(`Refund Successful for User ${userId}`);
           
           await redis.set(idempotencyKey, "true", "EX", 60 * 60 * 24 )
         }
@@ -63,7 +66,7 @@ const startService = async () => {
     });
 
   } catch (error) {
-    console.error("Failed to start Payment Service:", error);
+    logger.error("Failed to start Payment Service:", error);
     process.exit(1); 
   }
 };
@@ -83,7 +86,7 @@ app.post("/pay", catchAsync(async (req: Request, res: Response, next: NextFuncti
     message: "Payment is being processed. You will receive an email shortly." 
   });
 
-  console.log(`Processing payment for ${reservationId}...`);
+  logger.info(`Processing payment for ${reservationId}...`);
   
   await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -105,7 +108,7 @@ app.post("/pay", catchAsync(async (req: Request, res: Response, next: NextFuncti
     topic: "payment-events",
     messages: [{ value: JSON.stringify(eventPayload) }],
   });
-  console.log(`Emitted Event: ${eventType} for ${reservationId}`);
+  logger.info(`Emitted Event: ${eventType} for ${reservationId}`);
 }));
 
 // 404 Handler

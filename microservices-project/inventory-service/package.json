@@ -29,6 +29,7 @@
     "kafkajs": "^2.2.4",
     "node-cron": "^4.2.1",
     "uuid": "^13.0.0",
+    "winston": "^3.18.3",
     "zod": "^4.1.13"
   },
   "overrides": {

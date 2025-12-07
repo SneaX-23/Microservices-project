@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 import { prisma } from "../db/prisma";
 import { Producer } from "kafkajs";
-
+import logger from "../utils/logger";
 
 const redis = new Redis({
   host: process.env.REDIS_HOST || "redis",
@@ -33,7 +33,7 @@ export const checkoutService = {
 
     // Handle Cache Miss
     if (result === -1) {
-      console.log(`[Cache Miss] Hydrating Redis for Product ${productId}`);
+      logger.info(`[Cache Miss] Hydrating Redis for Product ${productId}`);
       
       const product = await prisma.product.findUnique({ where: { id: productId } });
       if (!product) throw new Error("Product not found");
@@ -94,7 +94,7 @@ export const ConfirmReservation = async (reservationId: string, paidAmount: numb
     if(!reservation) throw new Error("Reservation not found.");
 
     if(reservation.status === "EXPIRED" || reservation.status === "CANCELLED"){
-        console.warn(`[Zombie Check] Payment received for ${reservation.status} reservation ${reservationId}. Initiating Refund.`);
+        logger.warn(`[Zombie Check] Payment received for ${reservation.status} reservation ${reservationId}. Initiating Refund.`);
 
         // Emit Refund Event
         await producer.send({
@@ -116,7 +116,7 @@ export const ConfirmReservation = async (reservationId: string, paidAmount: numb
     }
 
     if(reservation.status === "CONFIRMED"){
-       console.log(`Reservation ${reservationId} already confirmed. Idempotency check passed.`);
+       logger.info(`Reservation ${reservationId} already confirmed. Idempotency check passed.`);
         return;
     }
 
@@ -138,7 +138,7 @@ export const ConfirmReservation = async (reservationId: string, paidAmount: numb
         
         // Safety Check
         if (stockToDeduct < 0) {
-            console.warn("Inconsistent stock: cannot confirm reservation.");
+            logger.warn("Inconsistent stock: cannot confirm reservation.");
             // ToDO Trigger Refund Logic 
             await producer.send({
               topic: "payment-events",
@@ -164,7 +164,7 @@ export const ConfirmReservation = async (reservationId: string, paidAmount: numb
             data: { stock: stockToDeduct },
         });
     });
-    console.log(`Reservation ${reservationId} confirmed successfully.`);
+    logger.info(`Reservation ${reservationId} confirmed successfully.`);
 }
 
 export const releaseReservation = async (reservationId: string) => {
@@ -175,12 +175,12 @@ export const releaseReservation = async (reservationId: string) => {
     if(!reservation) throw new Error("Reservation not found.");
 
     if(reservation.status === "EXPIRED" || reservation.status === "CONFIRMED"){
-        console.error(`Reservation ${reservationId} is already ${reservation.status}.`)
+        logger.error(`Reservation ${reservationId} is already ${reservation.status}.`)
         return;
     }
 
     if(reservation.status === "CANCELLED"){
-        console.log(`Reservation ${reservationId} already cancelled`);
+        logger.info(`Reservation ${reservationId} already cancelled`);
         return;
     }
 
@@ -195,5 +195,5 @@ export const releaseReservation = async (reservationId: string) => {
     const key = `inventory:product:${reservation.productId}:stock`;
     await redis.incrby(key, reservation.quantity);
 
-    console.log(`Reservation ${reservationId} released. Stock returned to Redis.`);
+    logger.info(`Reservation ${reservationId} released. Stock returned to Redis.`);
 }

@@ -17,13 +17,13 @@ export  const signup = catchAsync(async (
 
     const userExist = await findUser(email);
 
-    if(userExist) return next(new AppError("User already exist", 409))
+    if(userExist) return next(new AppError("User already exists", 409))
 
     
     const hashedPassword = await bcrypt.hash(password, 10);
     await createUser(email, hashedPassword, username);
 
-    res.status(201).json({message: "User created successfull."})
+    res.status(201).json({message: "User created successfully."})
 
 });
 

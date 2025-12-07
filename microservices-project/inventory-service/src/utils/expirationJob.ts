@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import Redis from "ioredis";
 import { prisma } from "../db/prisma";
-
+import logger from "./logger";
 const redis = new Redis({
   host: process.env.REDIS_HOST || "redis",
   port: 6379,
@@ -10,7 +10,7 @@ const redis = new Redis({
 export const startExpirationJob = () => {
   // Schedule task to run every minute (set to 10 seconds for testing)
   cron.schedule("*/10 * * * * *", async () => {
-    console.log("Running Expiration Cleanup Job...");
+    logger.info("Running Expiration Cleanup Job...");
 
     try {
       // Find all reservations that are PENDING and past their expiration time
@@ -27,18 +27,18 @@ export const startExpirationJob = () => {
         return; 
       }
 
-      console.log(`Found ${expiredReservations.length} expired reservations. Releasing stock...`);
+      logger.info(`Found ${expiredReservations.length} expired reservations. Releasing stock...`);
 
       //  Process each expired reservation
       for (const reservation of expiredReservations) {
         try {
           await processExpiredReservation(reservation);
         } catch (err) {
-            console.error(`Failed to process expired reservation ${reservation.id}:`, err);
+          logger.error({message: `Failed to process expired reservation ${reservation.id}:`, error: err});
         }
       }
     } catch (error) {
-      console.error("Critical Error in Expiration Job:", error);
+        logger.error({message:"Critical Error in Expiration Job:", error: error});
     }
   });
 };
@@ -65,5 +65,5 @@ async function processExpiredReservation(reservation: any) {
     //  Increment Redis Stock- Release the hold
     await redis.incrby(key, reservation.quantity);
     
-    console.log(`[Expired] Reservation ${reservation.id} cancelled. Restored ${reservation.quantity} items to Redis.`);
+    logger.info(`[Expired] Reservation ${reservation.id} cancelled. Restored ${reservation.quantity} items to Redis.`);
 }

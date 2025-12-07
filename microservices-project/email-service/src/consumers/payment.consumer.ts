@@ -1,6 +1,7 @@
 import { createKafkaConsumer, topics, consumerId } from "../config/kafka";
 import { getUserEmail } from "../config/user.config";
 import { sendMail } from "../services/email.service";
+import logger from "../utils/logger";
 
 const consumer = createKafkaConsumer();
 
@@ -24,12 +25,12 @@ export const startEamilPaymentConsumer = async () => {
                 // Send email 
                 await sendMail(userEmail, event.type, event.data);
 
-                console.log(`Eamil sent to user: ${event.data.userId}`);
+                logger.info(`Eamil sent to user: ${event.data.userId}`);
 
             }
         })
     } catch (err) {
-        console.error(`Failed to start payment consumer.`, err);
-        console.error("Consumer crashed — will retry.");
+        logger.error({message: `Failed to start payment consumer.`, error: err});
+        logger.info("Consumer crashed — will retry.");
     }
 }

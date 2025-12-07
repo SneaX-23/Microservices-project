@@ -1,13 +1,17 @@
 import { startEamilPaymentConsumer } from "./consumers/payment.consumer";
+import logger from "./utils/logger";
 
 async function main() {
-  console.log("Email Service starting...");
+  logger.info("Email Service starting...");
 
   try {
     await startEamilPaymentConsumer();
-    console.log("Kafka consumer running...");
+    logger.info("Kafka consumer running...");
   } catch (err) {
-    console.error("Failed to start email service", err);
+      logger.error({
+        message: "Failed to start email service",
+        error: err
+    });
   }
 }
 

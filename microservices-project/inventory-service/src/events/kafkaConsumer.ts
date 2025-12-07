@@ -1,6 +1,6 @@
 import { Kafka } from "kafkajs";
 import { ConfirmReservation, releaseReservation } from "../services/reservationService";
-
+import logger from "../utils/logger";
 const kafka = new Kafka({
     clientId: "inventory-service",
     brokers: [process.env.KAFKA_BROKER || "kafka:9092"],
@@ -12,7 +12,7 @@ const producer = kafka.producer();
 // 1. Export this function
 export const startKafka = async () => {
     try {
-        console.log("Kafka Consumer: Connecting...");
+        logger.info("Kafka Consumer: Connecting...");
         
         await consumer.connect();
         await producer.connect();
@@ -22,7 +22,7 @@ export const startKafka = async () => {
             fromBeginning: false,
         });
 
-        console.log("Kafka Consumer: Connected & Subscribed");
+        logger.info("Kafka Consumer: Connected & Subscribed");
         
         await consumer.run({
             eachMessage: async ({ topic, partition, message }) => {
@@ -41,13 +41,21 @@ export const startKafka = async () => {
                     if (event.type === "PAYMENT_FAILED") {
                         await releaseReservation(event.data.reservationId);
                     }
-                } catch (err) {
-                    console.error(`Error processing Kafka event ${event.type}:`, err);
+                } catch (err: any) {
+                    logger.error({
+                        message: `Error processing Kafka event ${event.type}`,
+                        stack: err instanceof Error ? err.stack : undefined,
+                        error: err,
+                    });
                 }
             }
         });
 
-    } catch (err) {
-        console.error("Failed to start Kafka consumer:", err);
+    } catch (err: any) {
+        logger.error({
+            message: `Failed to start kafka consumer`,
+            stack: err instanceof Error ? err.stack : undefined,
+            error: err,
+        });
     }
 };

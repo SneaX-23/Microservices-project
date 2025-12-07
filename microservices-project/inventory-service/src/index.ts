@@ -5,12 +5,13 @@ import { startExpirationJob } from "./utils/expirationJob";
 import { startKafka } from "./events/kafkaConsumer";
 import { globalErrorHandler } from "./controllers/errorController";
 import { AppError } from "./utils/appError";
-
+import { requestLogger } from "./middleware/requestLogger";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger);
 
 app.use("/api/v1/inventory", inventoryRoutes);
 
