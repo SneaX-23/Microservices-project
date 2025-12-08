@@ -5,9 +5,10 @@ import { createUser, deleteToken, revokeAllUserTokens, findTokenByHash, findUser
 import jwt from "jsonwebtoken";
 import { generateAccessToken, generateRefreshToken, hashToken } from '../utils/auth';
 import 'dotenv/config';
-
+import { producer } from "../config/kafka";
 import { catchAsync } from "../utils/catchAsync";
 import { AppError } from "../utils/appError";
+import logger from "../utils/logger";
 
 // auth/signp
 export  const signup = catchAsync(async (
@@ -23,7 +24,25 @@ export  const signup = catchAsync(async (
     const hashedPassword = await bcrypt.hash(password, 10);
     await createUser(email, hashedPassword, username);
 
-    res.status(201).json({message: "User created successfully."})
+    try{
+        await producer.send({
+            topic: "user-created",
+            messages: [{
+                value: JSON.stringify({
+                    type: "new_user",
+                    data: {
+                        email: email,
+                        username: username,
+                        timeStamp: new Date().toISOString(),
+                    }
+                })
+            }]
+        })
+    }catch(err){
+        logger.error("Failed to publish event to kafka", err);
+    }
+
+    return res.status(201).json({message: "User created successfully."})
 
 });
 

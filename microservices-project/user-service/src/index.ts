@@ -8,6 +8,7 @@ import userRoutes from "./routes/userRoutes";
 import { globalErrorHandler } from "./controllers/errorController";
 import { AppError } from "./utils/appError";
 import { requestLogger } from "./middleware/requestLogger";
+import { startKafka } from "./config/kafka";
 
 const app = express();
 app.use(express.json());
@@ -36,4 +37,7 @@ app.use(globalErrorHandler);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
     console.log(`User server listening on port ${PORT}`);
+    
+    // start kafka
+    await startKafka();
 });
