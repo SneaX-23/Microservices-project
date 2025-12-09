@@ -21,9 +21,7 @@ app.get("/health", (req, res) => {
 });
 
 // 404 Handler
-app.all("*", (req: Request, res: Response, next: NextFunction) => {
-  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
-});
+app.use((req, res) => res.status(404).json({ message: "Not found" }));
 
 // Global Error Handler
 app.use(globalErrorHandler);

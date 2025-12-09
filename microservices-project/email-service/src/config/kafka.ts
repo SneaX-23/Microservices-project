@@ -7,6 +7,7 @@ const kafka = new Kafka({
 
 export const topics = {
     PAYMENT_EVENTS: "payment-events",
+    USER_CREATED: "user-created"
 };
 
 export const consumerId = "email-service-consumer-group";

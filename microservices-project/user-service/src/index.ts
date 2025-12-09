@@ -2,7 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import os from "os";
 import 'dotenv/config'
 import cookieParser from "cookie-parser";
-
+import cors from "cors"
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import { globalErrorHandler } from "./controllers/errorController";
@@ -11,6 +11,10 @@ import { requestLogger } from "./middleware/requestLogger";
 import { startKafka } from "./config/kafka";
 
 const app = express();
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -27,9 +31,7 @@ app.get("/", (req, res) => {
 });
 
 // 404 error
-app.all("*", (req: Request, res: Response, next: NextFunction) => {
-    next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
-});
+app.use((req, res) => res.status(404).json({ message: "Not found" }));
 
 // global error handler
 app.use(globalErrorHandler);
