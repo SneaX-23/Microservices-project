@@ -64,7 +64,5 @@ nginx/certs/
 *.key
 *.pem
 
-ideas.txt
-hmm.txt
-
+*.txt
 frontend/
