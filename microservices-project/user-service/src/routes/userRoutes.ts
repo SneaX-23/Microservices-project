@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { getUser } from "../controllers/userController";
+import { getUserEamil } from "../controllers/userController";
 import { UserIdSchema } from "../validators/user.schema";
 import { validate } from "../validators/validate";
 
 const router = Router();
 
-router.get("/:id", getUser)
+router.get("/:id", getUserEamil)
 
 export default router;
