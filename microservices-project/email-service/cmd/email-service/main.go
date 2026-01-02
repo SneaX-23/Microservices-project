@@ -30,9 +30,10 @@ func main() {
 
 	emailService := services.NewEmailservice(mailer, renderer, svcConfig)
 
-	// Start the Consumer
+	// Start the Consumers
 	// run it in goroutine so it doesnt block other consumers
 	go consumers.PaymentConsumer(emailService)
+	go consumers.NewUserConsumer(emailService)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)

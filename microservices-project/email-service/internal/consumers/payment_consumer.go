@@ -64,7 +64,7 @@ func PaymentConsumer(emailservice *services.EmailService) {
 			}
 
 			// send email with retries
-			err = sendEmailWithRetry(emailservice, email, messageType, envelope.Data)
+			err = SendEmailWithRetry(emailservice, email, messageType, envelope.Data)
 			if err != nil {
 				slog.Info("Failed to sent email to %s after retries", "email", email)
 				return
@@ -78,7 +78,7 @@ func PaymentConsumer(emailservice *services.EmailService) {
 	}
 }
 
-func sendEmailWithRetry(emailService *services.EmailService, email string, messageType string, data any) error {
+func SendEmailWithRetry(emailService *services.EmailService, email string, messageType string, data any) error {
 	var err error
 	for i := range 3 {
 		err = emailService.SendEmail(email, messageType, data)
