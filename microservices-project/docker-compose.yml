@@ -36,21 +36,23 @@ services:
       - kafka
 
   email-service:
-    env_file:
-      - ./email-service/.env
     build:
       context: ./email-service
       dockerfile: Dockerfile
     # container_name: email_service
     expose:
-      - "3000"
+      - "8080"
+    ports:
+      - "8080:8080"
     environment:
-      - NODE_ENV=development
-      - PORT=3000
-      - KAFKA_BROKER=kafka:9092 
+      - KAFKA_BROKER=kafka:9092
+      - RESEND_API_KEY=${RESEND_API_KEY}  
+      - EMAIL_FROM=Email Service <no-reply@sneax.quest>
+    env_file:
+      - ./email-service/.env
     depends_on:
-      - redis
       - kafka
+    # restart: on-failure
 
   postgres:
     image: postgres:15-alpine
