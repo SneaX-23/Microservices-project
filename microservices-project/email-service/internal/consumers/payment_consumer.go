@@ -26,7 +26,7 @@ type KafkaEnvelope struct {
 	Data PaymentPayload `json:"data"`
 }
 
-func PaymentConsumer() {
+func PaymentConsumer(emailservice *services.EmailService) {
 	reader := config.NewKafkaReader(config.TopicPaymentEvents)
 	defer reader.Close()
 
@@ -56,17 +56,21 @@ func PaymentConsumer() {
 			messageType := envelope.Type
 			slog.Info("Received message", "type", messageType)
 
+			// get user email from user service
 			email, err := config.GetUserEmail(ctx, envelope.Data.UserId)
 			if err != nil {
 				slog.Error("Error getting user email from user service", "err", err)
 				return
 			}
-			err = sendEmailWithRetry(email, messageType, envelope.Data)
+
+			// send email with retries
+			err = sendEmailWithRetry(emailservice, email, messageType, envelope.Data)
 			if err != nil {
 				slog.Info("Failed to sent email to %s after retries", "email", email)
 				return
 			}
 
+			// commit message
 			reader.CommitMessages(context.Background(), msg)
 			slog.Info("Email sent to %s", "email", email)
 
@@ -74,10 +78,10 @@ func PaymentConsumer() {
 	}
 }
 
-func sendEmailWithRetry(email string, messageType string, data any) error {
+func sendEmailWithRetry(emailService *services.EmailService, email string, messageType string, data any) error {
 	var err error
 	for i := range 3 {
-		err = services.SendEmail(email, messageType, data)
+		err = emailService.SendEmail(email, messageType, data)
 		if err == nil {
 			return nil
 		}
